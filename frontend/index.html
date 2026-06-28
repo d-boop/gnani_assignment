@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraTranslate // Real-time Voice Translator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="glow-overlay"></div>
+  
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-accent">//</span> AURATRANSLATE
+      </div>
+      <div class="system-status">
+        <span class="status-dot"></span>
+        <span id="pipeline-status">PIPELINE: IDLE</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Interactive Microphone Area -->
+      <div class="visualizer-panel">
+        <div class="panel-header">
+          <span class="panel-title">AUDIO INGESTION PIPELINE</span>
+          <span class="panel-meta">16.0 kHz // 16-BIT PCM</span>
+        </div>
+
+        <div class="visualizer-wrapper">
+          <!-- Outer Pulsing Glow Rings -->
+          <div class="glow-ring ring-1"></div>
+          <div class="glow-ring ring-2"></div>
+          
+          <div class="mic-container" id="mic-container">
+            <!-- Fluctuation Bars (Inside the mic capsule visualizer) -->
+            <div class="visualizer-bars">
+              <div class="bar" id="bar-1"></div>
+              <div class="bar" id="bar-2"></div>
+              <div class="bar" id="bar-3"></div>
+              <div class="bar" id="bar-4"></div>
+              <div class="bar" id="bar-5"></div>
+            </div>
+            
+            <!-- Microphone SVG Icon -->
+            <svg class="mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4Z" fill="currentColor"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Start/Stop Capture Trigger -->
+        <button id="toggle-record-btn" class="action-btn btn-start">
+          <span class="btn-text">START CAPTURE</span>
+          <span class="btn-glow"></span>
+        </button>
+      </div>
+
+      <!-- Real-time translation feedback panel -->
+      <div class="feedback-panel">
+        <div class="panel-header">
+          <span class="panel-title">TRANSLATION STREAM</span>
+          <span class="panel-meta" id="latency-val">LATENCY: -- MS</span>
+        </div>
+        
+        <div class="stream-container">
+          <div class="stream-row source">
+            <span class="lang-tag">EN // ASR</span>
+            <div class="stream-text" id="asr-text">
+              <span class="text-placeholder">Awaiting speech input...</span>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="stream-row target">
+            <span class="lang-tag accent">HI // TRANS</span>
+            <div class="stream-text" id="trans-text">
+              <span class="text-placeholder">अनुवाद की प्रतीक्षा की जा रही है...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer Meta -->
+    <footer class="footer">
+      <div class="footer-item">SECURE CONTEXT: SECURE</div>
+      <div class="footer-item" id="websocket-status">WS: DISCONNECTED</div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
