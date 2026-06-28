@@ -4,6 +4,22 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 
+// Load local .env manually if it exists (zero-dependency)
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const part = line.trim();
+    if (part && !part.startsWith('#')) {
+      const [key, ...valueParts] = part.split('=');
+      const value = valueParts.join('=');
+      if (key && value) {
+        process.env[key.trim()] = value.trim();
+      }
+    }
+  });
+}
+
 const MIME_TYPES = {
   '.html': 'text/html',
   '.css': 'text/css',
@@ -16,6 +32,14 @@ const MIME_TYPES = {
 
 const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
+
+  // Dynamic environment variables endpoint
+  if (req.url === '/config.js') {
+    res.writeHead(200, { 'Content-Type': 'application/javascript' });
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    res.end(`window.ENV = { BACKEND_URL: "${backendUrl}" };`);
+    return;
+  }
 
   // Normalize URL path
   let filePath = req.url === '/' 

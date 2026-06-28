@@ -76,8 +76,10 @@ toggleRecordBtn.addEventListener('click', handleToggleRecord);
 // WebSocket Setup
 function initWebSocket() {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  // Connect directly to the FastAPI backend running on port 8000
-  const wsUrl = `${wsProtocol}//localhost:8000/stream`;
+  // Resolve Backend URL from environment settings served dynamically by node server
+  const backendUrl = (window.ENV && window.ENV.BACKEND_URL) || 'http://localhost:8000';
+  const cleanHost = backendUrl.replace(/^(https?:\/\/)/, '');
+  const wsUrl = `${wsProtocol}//${cleanHost}/stream`;
 
   websocketStatus.textContent = 'WS: CONNECTING...';
   
