@@ -60,7 +60,7 @@ server.on('upgrade', (req, socket, head) => {
 
 server.listen(PORT, () => {
   console.log(`==================================================`);
-  console.log(`AuraTranslate static dev server running at:`);
+  console.log(`Gnani Voice Translator static dev server running at:`);
   console.log(`http://localhost:${PORT}`);
   console.log(`==================================================`);
   console.log(`NOTE: Microphone access (getUserMedia) requires a`);

@@ -23,6 +23,7 @@ class TranscriptSegment:
     confidence: float
     timestamp: float
     speech_final: bool = False
+    speech_started: bool = False
 
 @dataclass(frozen=True)
 class TranslationSegment:

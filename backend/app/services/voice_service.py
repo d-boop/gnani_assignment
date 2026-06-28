@@ -15,11 +15,7 @@ from app.core.entities import (
 from app.interfaces.asr import IASRService
 from app.interfaces.translation import ITranslationService
 from app.interfaces.tts import ITTSService
-from app.services.factories import ASRFactory, TTSFactory
-
-# Other concrete service dependencies
-from app.services.mock_services import MockTranslationService
-from app.services.gemini import GeminiTranslationService
+from app.services.factories import ASRFactory, TTSFactory, TranslationFactory
 
 # Instantiate logger mapped to uvicorn console handlers
 logger = logging.getLogger("uvicorn.error")
@@ -48,6 +44,7 @@ class TranslationPipelineSession:
         self._asr_queue = asyncio.Queue()
         self._tts_queue = asyncio.Queue()
         self._asr_buffer: List[str] = []
+        self._pipeline_active = False
         
         # Async tasks references
         self._tasks: List[asyncio.Task] = []
@@ -99,6 +96,7 @@ class TranslationPipelineSession:
         self._asr_queue = asyncio.Queue()
         self._tts_queue = asyncio.Queue()
         self._asr_buffer = []
+        self._pipeline_active = False
 
         # Send interrupt status notification to client
         await self._send_json({
@@ -118,6 +116,18 @@ class TranslationPipelineSession:
         """ASR Listener Callback: Routes transcript to client and queues it for translation."""
         if not self._running:
             return
+            
+        # Real-time server-side text-based interruption cutoff:
+        # If the pipeline is active and we receive transcribed text:
+        if self._pipeline_active:
+            # Check if there is actual text content in this chunk
+            if segment.text.strip():
+                # Ignore short filler words or clicks (<= 3 characters)
+                if len(segment.text.strip()) <= 3:
+                    return
+                # If the text is substantial (> 3 characters), trigger instant cutoff
+                logger.info(f"[Session {self.session_id}] Server-initiated text interruption triggered (user spoke: \"{segment.text.strip()}\").")
+                await self.handle_interruption()
             
         # Accumulate committed text segments
         if segment.is_final:
@@ -153,6 +163,16 @@ class TranslationPipelineSession:
         try:
             while self._running:
                 segment: TranscriptSegment = await self._asr_queue.get()
+                
+                # Activate pipeline processing flag
+                self._pipeline_active = True
+                
+                # Send translating status back to frontend client to draw loader
+                await self._send_json({
+                    "type": "status",
+                    "text": "TRANSLATING",
+                    "message": "Translation processing started."
+                })
                 
                 tone = self._context.determine_tone()
                 start_time = time.time()
@@ -230,18 +250,23 @@ class TranslationPipelineSession:
                 logger.info(f"[TTS Worker] Routing sentence (tone={tone}) for speech synthesis: \"{sentence}\"")
                 
                 # Stream audio bytes from TTS
-                tts_stream = self._tts_service.synthesize_stream(sentence, tone)
-                
-                async for audio_segment in tts_stream:
-                    # Write binary audio packet out directly to client WS
-                    if self._running:
-                        await self._websocket.send_bytes(audio_segment.audio_bytes)
+                try:
+                    tts_stream = self._tts_service.synthesize_stream(sentence, tone)
+                    async for audio_segment in tts_stream:
+                        # Write binary audio packet out directly to client WS
+                        if self._running:
+                            await self._websocket.send_bytes(audio_segment.audio_segment if hasattr(audio_segment, "audio_segment") else audio_segment.audio_bytes)
+                except Exception as e:
+                    logger.error(f"[Session {self.session_id}] TTS stream failed: {e}")
                 
                 # Notify the client that the audio stream for this sentence has ended
                 if self._running:
                     await self._send_json({
                         "type": "audio_end"
                     })
+                
+                # Turn is complete: release pipeline lock
+                self._pipeline_active = False
                 
                 self._tts_queue.task_done()
         except asyncio.CancelledError:
@@ -255,6 +280,7 @@ class TranslationPipelineSession:
         """Clean up connection nodes and terminate active loops."""
         self._running = False
         self._asr_buffer = []
+        self._pipeline_active = False
         
         # Terminate workers
         for task in self._tasks:
@@ -287,13 +313,8 @@ class VoiceService:
         asr_service = ASRFactory.create_asr_service()
         tts_service = TTSFactory.create_tts_service()
         
-        # 2. Resolve Translation instance
-        if settings.USE_MOCK_SERVICES:
-            translation_service = MockTranslationService()
-        else:
-            if not settings.GEMINI_API_KEY:
-                raise ValueError("Missing GEMINI_API_KEY in configuration settings.")
-            translation_service = GeminiTranslationService(api_key=settings.GEMINI_API_KEY)
+        # 2. Resolve Translation instance via Factory
+        translation_service = TranslationFactory.create_translation_service()
 
         # 3. Instantiate session object
         session = TranslationPipelineSession(

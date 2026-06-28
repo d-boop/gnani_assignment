@@ -317,14 +317,13 @@ function handleServerResponse(response) {
       asrText.textContent = response.text;
     }
     
-    // Once the user stops speaking (ASR finalized), show the futuristic loader
+    // Once the user stops speaking (ASR finalized), wait for server to start translating
     if (response.is_final) {
-      transText.innerHTML = '<div class="translation-loader"><span></span><span></span><span></span></div>';
       waitingForNewSpeech = true;
     }
     
     // Trigger client-side interruption to cut off playback if user starts speaking fresh sentences
-    if (!response.is_final && isPlayingAudio) {
+    if (!response.is_final && isPlayingAudio && response.text && response.text.trim().length > 3) {
       console.log("[Client] User interrupted. Cutting off local playback.");
       websocket.send(JSON.stringify({ type: "interrupt" }));
       if (currentAudio) {
@@ -368,6 +367,11 @@ function handleServerResponse(response) {
     audioPlaybackQueue = [];
     receivedAudioChunks = [];
     isPlayingAudio = false;
+  } else if (response.type === 'status' && response.text === 'TRANSLATING') {
+    // Server confirmed translation processing started, draw loader
+    console.log("[Client] Server started translating. Drawing loader.");
+    transText.innerHTML = '<div class="translation-loader"><span></span><span></span><span></span></div>';
+    waitingForNewSpeech = true;
   } else if (response.type === 'status' && response.text === 'RECORDING') {
     console.log("[Client] Backend ASR successfully established. Arming microphone capture.");
     isRecording = true;

@@ -29,8 +29,8 @@ class GeminiTranslationService(ITranslationService):
         
         if GEMINI_AVAILABLE:
             genai.configure(api_key=self._api_key)
-            # Use gemini-3.5-flash as default for fast low-latency translations
-            self._model = genai.GenerativeModel("gemini-3.5-flash")
+            # Use the fastest benchmarked model available on your API key
+            self._model = genai.GenerativeModel("models/gemini-flash-lite-latest")
 
     def _parse_response(self, text: str, default_tone_type: ToneType) -> Tuple[str, str]:
         """Safely parses JSON response from Gemini, falling back to clean defaults on failure."""
@@ -64,9 +64,10 @@ class GeminiTranslationService(ITranslationService):
         system_instructions = (
             "You are a real-time conversational translator converting English speech to Hindi.\n"
             "Guidelines:\n"
-            "1. Format dates, times, and abbreviations phonetically in localized Hindi.\n"
-            "2. Keep named brand entities phonetically in Hindi script instead of translating them literally.\n"
-            "3. Analyze the conversational emotion of the source English text and categorize the tone parameter in the JSON output schema.\n"
+            "1. ALWAYS output the translation using the Devanagari script (Hindi characters). Do NOT write in Hinglish or Romanized/transliterated Hindi.\n"
+            "2. Format dates, times, and abbreviations phonetically in Devanagari Hindi.\n"
+            "3. Keep named brand entities phonetically in Devanagari Hindi script instead of translating them literally (e.g., write 'Google' as 'गूगल').\n"
+            "4. Analyze the conversational emotion of the source English text and categorize the tone parameter in the JSON output schema.\n"
         )
         
         tone_instruction = ""

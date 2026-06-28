@@ -14,6 +14,10 @@ class Settings:
     DEEPGRAM_API_KEY: str = os.getenv("DEEPGRAM_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     
+    # Provider configuration settings
+    ASR_PROVIDER: str = os.getenv("ASR_PROVIDER", "deepgram") # Options: 'deepgram'
+    TRANSLATION_PROVIDER: str = os.getenv("TRANSLATION_PROVIDER", "gemini") # Options: 'gemini'
+    
     # TTS configuration settings
     TTS_PROVIDER: str = os.getenv("TTS_PROVIDER", "elevenlabs") # Options: 'elevenlabs' or 'azure'
     

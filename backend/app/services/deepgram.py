@@ -32,7 +32,7 @@ class DeepgramASRService(IASRService):
             "&channels=1"
             "&interim_results=true"
             "&utterance_end_ms=1500"
-            "&endpointing=2000"
+            "&endpointing=500"
             "&punctuation=false"
         )
         
@@ -53,6 +53,8 @@ class DeepgramASRService(IASRService):
                 if not self._running:
                     break
                 data = json.loads(message)
+                
+
                 
                 # Catch native Deepgram UtteranceEnd event
                 if data.get("type") == "UtteranceEnd":

@@ -1,10 +1,12 @@
 from app.core.config import settings
 from app.interfaces.asr import IASRService
+from app.interfaces.translation import ITranslationService
 from app.interfaces.tts import ITTSService
 
 # Import concrete services
-from app.services.mock_services import MockASRService, MockTTSService
+from app.services.mock_services import MockASRService, MockTranslationService, MockTTSService
 from app.services.deepgram import DeepgramASRService
+from app.services.gemini import GeminiTranslationService
 from app.services.azure_tts import AzureTTSService
 from app.services.elevenlabs import ElevenLabsTTSService
 
@@ -16,10 +18,30 @@ class ASRFactory:
         if settings.USE_MOCK_SERVICES:
             return MockASRService()
         
-        if not settings.DEEPGRAM_API_KEY:
-            raise ValueError("Missing DEEPGRAM_API_KEY in configuration settings.")
+        provider = settings.ASR_PROVIDER.lower()
+        if provider == "deepgram":
+            if not settings.DEEPGRAM_API_KEY:
+                raise ValueError("Missing DEEPGRAM_API_KEY in configuration settings.")
+            return DeepgramASRService(api_key=settings.DEEPGRAM_API_KEY)
+        else:
+            raise ValueError(f"Unknown ASR provider: '{provider}' requested.")
+
+
+class TranslationFactory:
+    """Factory for creating translation service instances."""
+    
+    @staticmethod
+    def create_translation_service() -> ITranslationService:
+        if settings.USE_MOCK_SERVICES:
+            return MockTranslationService()
             
-        return DeepgramASRService(api_key=settings.DEEPGRAM_API_KEY)
+        provider = settings.TRANSLATION_PROVIDER.lower()
+        if provider == "gemini":
+            if not settings.GEMINI_API_KEY:
+                raise ValueError("Missing GEMINI_API_KEY in configuration settings.")
+            return GeminiTranslationService(api_key=settings.GEMINI_API_KEY)
+        else:
+            raise ValueError(f"Unknown translation provider: '{provider}' requested.")
 
 
 class TTSFactory:
